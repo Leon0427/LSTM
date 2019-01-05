@@ -14,7 +14,7 @@
 
 ​	循环神经网络(Recurrent neural network, RNN)解决了这个问题，RNN的网络中存在环，这使得信息能够存留。
 
-<img src="./fig/RNN-rolled.png" width="100" align="center" />
+<div align="center"><img src="./fig/RNN-rolled.png" width="100"/></div>
 
 <p align="center">循环神经网络：存在环</p>
 
@@ -60,7 +60,7 @@
 
 ​	所有的RNN结构都是链式地重复神经元模块。在标准的RNN中，这些重复的模块的结构非常简单，例如一个简单的tanh层。
 
-<img src="./fig/LSTM3-SimpleRNN.png" width=400 align="center">
+<img src="./fig/LSTM3-SimpleRNN.png" width=400 >
 
 <p align="center">RNN中只包含单一层的重复模块</p>
 
