@@ -100,13 +100,13 @@ LSTM有三个门，来保护和控制the cell state.
 
 LSTM的第一步是决定从the cell state中丢弃什么信息。这一决定是由叫做"forget gate layer"的sigmoid层作出的。它根据$$h_{t-1}$$和$$x_t$$，为the cell state $$c_{t-1}$$中的每一个数输出一个0到1之间的数字。1代表“完全保留”，0代表“完全丢弃”。
 
-让我们再次考虑语言模型的例子：我们希望通过所有之前的词语来预测下一个词语。在这种问题中，the cell state可能包含了当前主体的性别信息，所以我们可以预测使用正确的代词。当我们看到了一个新的主体时，我们就希望忘掉之前主体的性别信息。
+让我们再次考虑语言模型的例子：我们希望通过所有之前的词语来预测下一个词语。在这种问题中，the cell state可能包含了当前主语的性别信息，所以我们可以预测使用正确的代词。当我们看到了一个新的主语时，我们就希望忘掉之前主语的性别信息。
 
 <div align="center"><img src="./fig/LSTM3-focus-f.png" width=500/></div>
 
 第二步决定向the cell state中存储哪些新信息。这分为两部分。第一，一个叫做"input gate layer"的sigmoid层决定我们更新哪些值；然后一个tanh层创建一个包含将被添加到cell state的候选值的向量， $$\tilde{C}_t$$。在下一步中，我们将把这两部分合并，创建一个更新。
 
-在语言模型的例子中，我们希望向cell state增添新主体的性别信息，来替换旧的主体的性别信息。
+在语言模型的例子中，我们希望向cell state增添新主语的性别信息，来替换旧的主语的性别信息。
 
 <div align="center"><img src="./fig/LSTM3-focus-i.png" width=500/></div>
 
@@ -114,15 +114,52 @@ LSTM的第一步是决定从the cell state中丢弃什么信息。这一决定�
 
 我们把旧state乘以$$f_t$$,忘掉那些我们希望忘掉的信息。然后我们加上$$i_t*\tilde{C}_t$$.这就是用于更新每个state值的候选值，并且缩放了我们想要的倍数。
 
-在语言模型的例子中，这里就是我们我们丢弃旧主体的性别信息然后加上新的信息的位置。
+在语言模型的例子中，这里就是我们我们丢弃旧主语的性别信息然后加上新的信息的位置。
 
 <div align="center"><img src="./fig/LSTM3-focus-C.png" width=500/></div>
 
+最终，我们需要决定输出哪些信息。这些输出以cell state为基准，但需要过滤其中部分信息。首先，运行一个sigmoid层，它决定了我们将输出cell state哪些部分。然后，我们将cell state通过一个tanh(将其中的值限定在-1到1之间)，然后再将结果与sigmoid门的输出相乘。这样，我们就可以只输出我们想要的部分。
 
+对于语言模型的例子，由于它刚刚看到一个主语，它可能想输出一些关于动词的信息，作为接下来的内容。例如，它可能输出主语是否是负数的信息，这样我们就可以预测接下来动词的时态。
+
+<div align="center"><img src="./fig/LSTM3-focus-o.png" width=500/></div>
 
 #### LSTM的变体
 
+到现在，我们介绍了标准的LSTM。但不是所有的LSTM都长这样。实际上，所有涉及到LSTM的论文中都使用的稍有差别的LSTM版本。这些差别很细微，但值得一提。
+
+一个著名的LSTM变体，这一变体由[Gers & Schmidhuber (2000)](ftp://ftp.idsia.ch/pub/juergen/TimeCount-IJCNN2000.pdf)提出，增加了窥视连接(peephole connections).该连接让LSTM的门可以窥视the cell state.
+
+<div align="center"><img src="./fig/LSTM3-var-peepholes.png" width=500/></div>
+
+上图中，所有门都加了peephole, 但许多论文中，只给部分门添加了peephole。
+
+另一种变体使用了耦合的遗忘门(forget gate)和输入门(input gate)。相比于标准版LSTM，我们不再分别决定要遗忘和添加的信息，而是一起做相应的决定。我们只在需要输入新信息的位置遗忘信息；我们只在需要遗忘的时候往the state中加入新的信息。
+
+<div align="center"><img src="./fig/LSTM3-var-tied.png" width=500/></div>
+
+还有一个变化更大的LSTM变体，叫做Gated Recurrent Unit(GRU)，由[Cho, et al. (2014)](http://arxiv.org/pdf/1406.1078v3.pdf)提出。GRU将遗忘和输入门合并为一个“更新门”，然后把cell state和hidden state合并了，另外还有一些其他的修改。最终模型比标准LSTM要简单，而且变得日益流行。
+
+<div align="center"><img src="./fig/LSTM3-var-GRU.png" width=500/></div>
+
+上述便是值得注意的LSTM变体。其他的还有很多，比如[Yao, et al. (2015)](http://arxiv.org/pdf/1508.03790v2.pdf)的Depth Gated RNNs. 也有一些完全不同的针对长期依赖问题的尝试，比如[Koutnik, et al. (2014)](http://arxiv.org/pdf/1402.3511v1.pdf)的Clockwork RNNs.
+
+哪种变体最好？这些区别有什么卵用？[Greff, et al. (2015)](http://arxiv.org/pdf/1503.04069.pdf)针对常用的LSTM变体做了很好的对比，发现它们都差不多。[Jozefowicz, et al. (2015)](http://jmlr.org/proceedings/papers/v37/jozefowicz15.pdf)尝试了上万种RNN结构，发现有些结构在特征任务上表现比LSTM好。
+
 ### 总结
+
+早先我提到了人们使用RNN取得的骄人成绩。事实上所有的这些成就都是使用LSTM取得的，在大多数任务下，LSTM是最棒的。
+
+当我们把LSTM用一批公式来表述，这看起来很吓人。希望我的这个LSTM漫游博客让LSTM更加好理解。
+
+LSTM是RNN的一个大里程碑。那么我们不禁要问了：还有其他的大里程碑吗？对，有的，那就是：attention。核心思想是让RNN选取一小部分信息来观察，而与此同时它又清楚更大范围的全局信息。举个例子，如果你在使用RNN为图像生成描述性的文字，attention可能选择图像的一部分进行观察，这一观察针对它的每一个输出词汇。事实上， [Xu,*et al.* (2015)](http://arxiv.org/pdf/1502.03044v2.pdf) 已经做了这样的尝试——如果你想探索attention，你可以试着从盯着一点看开始。当前已经有很多针对attention的令人振奋的尝试，而且更多的发现还在继续。
+
+attention不是RNN研究的唯一的重要支线。比如说[Kalchbrenner, *et al.* (2015)](http://arxiv.org/pdf/1507.01526v1.pdf)的Grid LSTMs看起来就很有前途。使用RNN做生成模型的工作——比如[Gregor, *et al.* (2015)](http://arxiv.org/pdf/1502.04623.pdf), [Chung, *et al.*(2015)](http://arxiv.org/pdf/1506.02216v3.pdf), or [Bayer & Osendorfer (2015)](http://arxiv.org/pdf/1411.7610v3.pdf) ——看起来也很有趣。过去的几年是RNN的黄金时间，而接下来的十年更是如此！
 
 ### 致谢
 
+我非常感谢那些帮助我更好地理解LSTM的人，对可视化提出评论的人，以及对本文提供反馈的人。
+
+我非常感谢我在google的同事，感谢他们有益的反馈。尤其要感谢[Oriol Vinyals](http://research.google.com/pubs/OriolVinyals.html), [Greg Corrado](http://research.google.com/pubs/GregCorrado.html), [Jon Shlens](http://research.google.com/pubs/JonathonShlens.html), [Luke Vilnis](http://people.cs.umass.edu/~luke/), 和 [Ilya Sutskever](http://www.cs.toronto.edu/~ilya/).我还要感谢那些抽出时间帮助我的朋友和同事，他们是 [Dario Amodei](https://www.linkedin.com/pub/dario-amodei/4/493/393), 和 [Jacob Steinhardt](http://cs.stanford.edu/~jsteinhardt/).我尤其要感谢的是[Kyunghyun Cho](http://www.kyunghyuncho.me/) ，感谢他对我的示意图的有见解的一致性分析。
+
+在这篇博客之前，我在我授课的两个神经网络研习班上练习着讲解过了LSTM。谢谢每一位参与者，谢谢他们的耐心和反馈。
