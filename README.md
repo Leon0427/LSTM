@@ -22,7 +22,7 @@
 
 ​	这些环使得RNN看起来有些难以理解。但其实如果你深入思考一下，RNN与普通的神经网络并没有很大的区别。RNN的单元可以被理解为多个神经元的复制，每一个复制品都把自己的信息传递给下一个复制品。我们把循环神经元展开如下：
 
-<img src="./fig/RNN-unrolled.png" width="400" align="center" />
+<div align="center"><img src="./fig/RNN-unrolled.png" width="400"/></div>
 
 <p align="center">展开的RNN神经元</p>
 
@@ -38,7 +38,7 @@
 
 ​	有时，我们只需要最近的信息来解决当下的任务。比如在语言建模任务中，我们尝试根据先前的若干词预测下一个词。如果我们尝试预测 “the clouds are in the *sky*” 中的最后一个词，我们并不需要更先前的上下文——很明显最后一个词应该是"sky"。在这种情况下，过去的依赖信息和这些信息被用到的地方相距不远，RNN可以使用这些过去的信息。
 
-<img src="./fig/RNN-shorttermdepdencies.png" width=400 align="center">
+<div align="center"><img src="./fig/RNN-shorttermdepdencies.png" width=400 align="center"></div>
 
 ​	但有些情况下，我们需要更多的上下文。还是考虑“预测最后一个词”的情况：“I grew up in France... I speak fluent *French*.”临近的信息可以推测出下一个词很可能是一种语言名称，但如果你想知道是哪种语言，我们就需要更早的上下文中的“France”。这种相关依赖的位置距离我们预测位置很远的情况并不少见。
 
@@ -46,7 +46,7 @@
 
 
 
-<img src="./fig/RNN-longtermdependencies.png" width=400 align="center">
+<div align="center"><img src="./fig/RNN-longtermdependencies.png" width=400 align="center"></div>
 
 ​	理论上，RNN是完全可以搞定这些长期依赖的。我们可以为RNN仔细挑选参数来解决这一问题。但实际上，RNN 并不能学到这些长期依赖。 [Hochreiter (1991) [German\]](http://people.idsia.ch/~juergen/SeppHochreiter1991ThesisAdvisorSchmidhuber.pdf) 和[Bengio, et al. (1994)](http://www-dsi.ing.unifi.it/~paolo/ps/tnn-94-gradient.pdf) 深入研究并找到了为什么RNN不能解决这一问题的一些根本原因。
 
@@ -60,15 +60,69 @@
 
 ​	所有的RNN结构都是链式地重复神经元模块。在标准的RNN中，这些重复的模块的结构非常简单，例如一个简单的tanh层。
 
-<img src="./fig/LSTM3-SimpleRNN.png" width=400 >
+<div align="center"><img src="./fig/LSTM3-SimpleRNN.png" width=400 ></div>
 
 <p align="center">RNN中只包含单一层的重复模块</p>
 
-LSTM的结构也是链式结构，但是组成链式结构的重复模块的结构与标准RNN不同，LSTM的模块不再由一个简单的神经网络层构成，而是由4个以特殊形式交互的神经元构成。
+​	LSTM的结构也是链式结构，但是组成链式结构的重复模块的结构与标准RNN不同，LSTM的模块不再由一个简单的神经网络层构成，而是由4个以特殊形式交互的神经元构成。
 
 
 
-<img src="./fig/LSTM3-chain.png" width=400 align="center">
+<div align="center"><img src="./fig/LSTM3-chain.png" width=400 align="center"></div>
 
 <p align="center">LSTM的重复模块包含4个相互交互的层</p>
+
+​	先不用急着理解LSTM的细节，我们会一步一步把它扒个干净。现在，我们只需要先了解一下几个会用到的符号。
+
+<div align="center"><img src="./fig/LSTM2-notation.png" width=400/></div>
+
+​	在上图中，每条线都输运一个向量(vector)，从一个节点(node)的输出到另一些节点的输入。分红的圆圈代表逐点的操作，比如向量的加法，黄色方形代表学出的神经网络层。线的汇集代表拼接，线的分叉代表其内容被拷贝，又被输运到了不同的位置。
+
+#### LSTM的核心思想
+
+LSTM的关键在于the cell state，即下图中穿越图片顶部的那条线。
+
+the cell state有点像一条传送带。它贯穿整个链式结构，仅有一些线性的交互。信息可以通过它传送，并保持不变。
+
+<div align="center"><img src="./fig/LSTM3-C-line.png" width=600/></div>
+
+LSTM不能从the cell state中添加或者删除信息，这一点由名为gate的结构来保证。
+
+gates是一种信息选择性通过机制。它们由一个sigmoid神经网络层和一个点乘操作构成。
+
+<div align="center"><img src="./fig/LSTM3-gate.png" width=100/></div>
+
+sigmoid层输出在0到1之间，决定了每个成分(component)通过的百分比。取0代表任何信号不得通过，取1代表所有信号都可以通过。
+
+LSTM有三个门，来保护和控制the cell state.
+
+#### LSTM漫游
+
+LSTM的第一步是决定从the cell state中丢弃什么信息。这一决定是由叫做"forget gate layer"的sigmoid层作出的。它根据$$h_{t-1}$$和$$x_t$$，为the cell state $$c_{t-1}$$中的每一个数输出一个0到1之间的数字。1代表“完全保留”，0代表“完全丢弃”。
+
+让我们再次考虑语言模型的例子：我们希望通过所有之前的词语来预测下一个词语。在这种问题中，the cell state可能包含了当前主体的性别信息，所以我们可以预测使用正确的代词。当我们看到了一个新的主体时，我们就希望忘掉之前主体的性别信息。
+
+<div align="center"><img src="./fig/LSTM3-focus-f.png" width=500/></div>
+
+第二步决定向the cell state中存储哪些新信息。这分为两部分。第一，一个叫做"input gate layer"的sigmoid层决定我们更新哪些值；然后一个tanh层创建一个包含将被添加到cell state的候选值的向量， $$\tilde{C}_t$$。在下一步中，我们将把这两部分合并，创建一个更新。
+
+在语言模型的例子中，我们希望向cell state增添新主体的性别信息，来替换旧的主体的性别信息。
+
+<div align="center"><img src="./fig/LSTM3-focus-i.png" width=500/></div>
+
+现在我们就可以把旧的cell state，$$\tilde{C}_{t-1}$$，更新为新的cell state，$$\tilde{C}_t$$了。
+
+我们把旧state乘以$$f_t$$,忘掉那些我们希望忘掉的信息。然后我们加上$$i_t*\tilde{C}_t$$.这就是用于更新每个state值的候选值，并且缩放了我们想要的倍数。
+
+在语言模型的例子中，这里就是我们我们丢弃旧主体的性别信息然后加上新的信息的位置。
+
+<div align="center"><img src="./fig/LSTM3-focus-C.png" width=500/></div>
+
+
+
+#### LSTM的变体
+
+### 总结
+
+### 致谢
 
