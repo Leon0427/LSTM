@@ -169,3 +169,8 @@
 ​	我非常感谢我在google的同事，感谢他们有益的反馈。尤其要感谢[Oriol Vinyals](http://research.google.com/pubs/OriolVinyals.html), [Greg Corrado](http://research.google.com/pubs/GregCorrado.html), [Jon Shlens](http://research.google.com/pubs/JonathonShlens.html), [Luke Vilnis](http://people.cs.umass.edu/~luke/), 和 [Ilya Sutskever](http://www.cs.toronto.edu/~ilya/).我还要感谢那些抽出时间帮助我的朋友和同事，他们是 [Dario Amodei](https://www.linkedin.com/pub/dario-amodei/4/493/393), 和 [Jacob Steinhardt](http://cs.stanford.edu/~jsteinhardt/).我尤其要感谢的是[Kyunghyun Cho](http://www.kyunghyuncho.me/) ，感谢他对我的示意图的有见解的一致性分析。
 
 ​	在这篇博客之前，我在我授课的两个神经网络研习班上练习着讲解过了LSTM。谢谢每一位参与者，谢谢他们的耐心和反馈。
+
+### 其他资料
+
+LSTM cell的参数个数
+https://www.zhihu.com/question/268956632 知乎- LSTM的参数问题？
